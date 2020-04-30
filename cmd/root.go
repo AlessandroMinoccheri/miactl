@@ -3,9 +3,11 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/mia-platform/miactl/sdk"
+	"gopkg.in/yaml.v2"
 
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
@@ -15,6 +17,7 @@ import (
 var (
 	cfgFile string
 	opts    = sdk.Options{}
+	cfgHome string
 )
 
 // NewRootCmd creates a new root command
@@ -26,6 +29,7 @@ func NewRootCmd() *cobra.Command {
 
 	// add sub command to root command
 	rootCmd.AddCommand(newGetCmd())
+	rootCmd.AddCommand(newSetCommand())
 
 	rootCmd.AddCommand(newCompletionCmd(rootCmd))
 	return rootCmd
@@ -47,10 +51,21 @@ func init() {
 }
 
 func setRootPersistentFlag(rootCmd *cobra.Command) {
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.miaplatformctl.yaml)")
+	home, err := homedir.Dir()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	cfgHome = fmt.Sprintf("%s/%s", home, ".miactl")
+
+	// rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.miactl.yaml)")
 	rootCmd.PersistentFlags().StringVar(&opts.APIKey, "apiKey", "", "API Key")
 	rootCmd.PersistentFlags().StringVar(&opts.APICookie, "apiCookie", "", "api cookie sid")
 	rootCmd.PersistentFlags().StringVar(&opts.APIBaseURL, "apiBaseUrl", "", "api base url")
+
+	// viper.BindPFlag("apiKey", rootCmd.Flags().Lookup("apiKey"))
+	// viper.BindPFlag("apiCookie", rootCmd.Flags().Lookup("apiCookie"))
+	// viper.BindPFlag("apiKey", rootCmd.Flags().Lookup("apiKey"))
 
 	rootCmd.MarkFlagRequired("apiKey")
 	rootCmd.MarkFlagRequired("apiCookie")
@@ -70,9 +85,13 @@ func initConfig() {
 			os.Exit(1)
 		}
 
-		// Search config in home directory with name ".miaplatformctl" (without extension).
+		// Search config in home directory with name ".miactl" (without extension).
 		viper.AddConfigPath(home)
-		viper.SetConfigName(".miaplatformctl")
+		viper.SetConfigName(".miactl")
+
+		// viper.Set("a", "b")
+		// s := yamlStringSettings()
+		// ioutil.WriteFile(fmt.Sprintf("%s/.miactl", home), []byte(s), 0755)
 	}
 
 	viper.AutomaticEnv() // read in environment variables that match
@@ -81,4 +100,13 @@ func initConfig() {
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Println("Using config file:", viper.ConfigFileUsed())
 	}
+}
+
+func yamlStringSettings() string {
+	c := viper.AllSettings()
+	bs, err := yaml.Marshal(c)
+	if err != nil {
+		log.Fatalf("unable to marshal config to YAML: %v", err)
+	}
+	return string(bs)
 }

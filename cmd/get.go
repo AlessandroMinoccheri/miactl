@@ -13,9 +13,7 @@ func newGetCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:       "get",
 		ValidArgs: validArgs,
-		Args: func(cmd *cobra.Command, args []string) error {
-			return cobra.ExactValidArgs(1)(cmd, args)
-		},
+		Args:      cobra.ExactValidArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			f, err := GetFactoryFromContext(cmd.Context(), opts)
 			if err != nil {

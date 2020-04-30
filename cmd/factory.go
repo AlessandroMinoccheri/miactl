@@ -8,6 +8,7 @@ import (
 
 	"github.com/mia-platform/miactl/renderer"
 	"github.com/mia-platform/miactl/sdk"
+	"github.com/spf13/afero"
 )
 
 // FactoryContextKey key of the factory in context
@@ -19,6 +20,7 @@ type miaClientCreator func(opts sdk.Options) (*sdk.MiaClient, error)
 type Factory struct {
 	Renderer  renderer.IRenderer
 	MiaClient *sdk.MiaClient
+	Fs        afero.Fs
 
 	miaClientCreator miaClientCreator
 }
@@ -40,6 +42,7 @@ func WithFactoryValue(ctx context.Context, writer io.Writer) context.Context {
 	return context.WithValue(ctx, FactoryContextKey{}, Factory{
 		Renderer:         renderer.New(writer),
 		miaClientCreator: sdk.New,
+		Fs:               afero.NewOsFs(),
 	})
 }
 
