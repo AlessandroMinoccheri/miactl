@@ -10,6 +10,7 @@ import (
 	"github.com/mia-platform/miactl/renderer"
 	"github.com/mia-platform/miactl/sdk"
 
+	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 )
 
@@ -38,8 +39,9 @@ func executeRootCommandWithContext(mockError sdk.MockClientError, args ...string
 	rootCmd.SetArgs(args)
 
 	ctx := context.WithValue(context.Background(), FactoryContextKey{}, Factory{
-		Renderer:         renderer.New(rootCmd.OutOrStderr()),
+		renderer:         renderer.New(rootCmd.OutOrStderr()),
 		miaClientCreator: sdk.WrapperMockMiaClient(mockError),
+		fs:               &afero.MemMapFs{},
 	})
 
 	err = rootCmd.ExecuteContext(ctx)

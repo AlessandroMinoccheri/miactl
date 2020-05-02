@@ -32,14 +32,14 @@ func newGetCmd() *cobra.Command {
 }
 
 func getProjects(f *Factory) {
-	projects, err := f.MiaClient.Projects.Get()
+	projects, err := f.MiaClient().Projects.Get()
 	if err != nil {
-		f.Renderer.Error(err).Render()
+		f.Renderer().Error(err).Render()
 		return
 	}
 
 	headers := []string{"#", "Name", "Configuration Git Path", "Project id"}
-	table := f.Renderer.Table(headers)
+	table := f.Renderer().Table(headers)
 	for i, project := range projects {
 		table.Append([]string{
 			strconv.Itoa(i + 1),

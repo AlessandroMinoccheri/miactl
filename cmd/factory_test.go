@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"os"
 	"reflect"
 	"testing"
 
 	"github.com/mia-platform/miactl/renderer"
 	"github.com/mia-platform/miactl/sdk"
+	"github.com/spf13/afero"
 
 	"github.com/stretchr/testify/require"
 )
@@ -45,7 +47,7 @@ func TestAddMiaClientToFactory(t *testing.T) {
 		require.EqualError(t, err, fmt.Sprintf("%s: client options are not correct", sdk.ErrCreateClient))
 	})
 
-	t.Run("method add MiaClient to factory", func(t *testing.T) {
+	t.Run("add MiaClient to factory", func(t *testing.T) {
 		opts := sdk.Options{
 			APIKey:     "my-apiKey",
 			APIBaseURL: "base-url",
@@ -64,9 +66,51 @@ func TestAddMiaClientToFactory(t *testing.T) {
 		err = f.addMiaClientToFactory(opts)
 		require.NoError(t, err)
 
-		require.Equal(t, nil, f.Renderer)
-		require.Equal(t, miaClient, f.MiaClient)
+		require.Equal(t, miaClient, f.MiaClient())
 		require.Equal(t, reflect.ValueOf(miaClientCreator).Pointer(), reflect.ValueOf(f.miaClientCreator).Pointer())
+	})
+}
+
+func TestRendererMethod(t *testing.T) {
+	t.Run("panic if renderer is nil", func(t *testing.T) {
+		f := Factory{}
+		require.PanicsWithError(t, fmt.Sprintf("%s: renderer not defined", errFactory), func() { f.Renderer() })
+	})
+
+	t.Run("returns renderer correctly", func(t *testing.T) {
+		f := Factory{
+			renderer: renderer.New(os.Stdout),
+		}
+		require.Equal(t, renderer.New(os.Stdout), f.Renderer())
+	})
+}
+
+func TestMiaClientMethod(t *testing.T) {
+	t.Run("panic if miaClient is nil", func(t *testing.T) {
+		f := Factory{}
+		require.PanicsWithError(t, fmt.Sprintf("%s: mia client not defined", errFactory), func() { f.MiaClient() })
+	})
+
+	t.Run("returns miaClient correctly", func(t *testing.T) {
+		f := Factory{
+			miaClient: &sdk.MiaClient{},
+		}
+		client := &sdk.MiaClient{}
+		require.Equal(t, client, f.MiaClient())
+	})
+}
+
+func TestFsMethod(t *testing.T) {
+	t.Run("panic if renderer is nil", func(t *testing.T) {
+		f := Factory{}
+		require.PanicsWithError(t, fmt.Sprintf("%s: fs not defined", errFactory), func() { f.Fs() })
+	})
+
+	t.Run("returns renderer correctly", func(t *testing.T) {
+		f := Factory{
+			fs: afero.NewMemMapFs(),
+		}
+		require.Equal(t, afero.NewMemMapFs(), f.Fs())
 	})
 }
 
@@ -77,7 +121,7 @@ func TestGetFactoryFromContext(t *testing.T) {
 		f, err := GetFactoryFromContext(ctx, sdk.Options{})
 
 		require.Nil(t, f)
-		require.EqualError(t, err, "context error")
+		require.EqualError(t, err, errFactory.Error())
 	})
 
 	t.Run("throws if mia client error", func(t *testing.T) {
@@ -106,8 +150,8 @@ func TestGetFactoryFromContext(t *testing.T) {
 		miaClient, err := sdk.New(opts)
 
 		require.NoError(t, err)
-		require.Equal(t, renderer.New(&bytes.Buffer{}), f.Renderer)
-		require.Equal(t, miaClient, f.MiaClient)
+		require.Equal(t, renderer.New(&bytes.Buffer{}), f.Renderer())
+		require.Equal(t, miaClient, f.MiaClient())
 		require.Equal(t, reflect.ValueOf(sdk.New).Pointer(), reflect.ValueOf(f.miaClientCreator).Pointer())
 	})
 }

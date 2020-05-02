@@ -15,7 +15,7 @@ import (
 func TestGetCommandRenderAndReturnsError(t *testing.T) {
 	t.Run("without context", func(t *testing.T) {
 		out, err := executeCommand(NewRootCmd(), "get", "projects")
-		expectedErrMessage := fmt.Sprintf("%s", "context error")
+		expectedErrMessage := fmt.Sprintf("%s", errFactory)
 		require.Contains(t, out, expectedErrMessage)
 		require.EqualError(t, err, expectedErrMessage)
 	})
@@ -99,8 +99,8 @@ func TestGetProjects(t *testing.T) {
 		prjMock.SetReturnError(getErr)
 
 		f := &Factory{
-			Renderer:  renderer.New(buf),
-			MiaClient: miaClient,
+			renderer:  renderer.New(buf),
+			miaClient: miaClient,
 		}
 		getProjects(f)
 
@@ -118,8 +118,8 @@ func TestGetProjects(t *testing.T) {
 		require.NoError(t, err)
 
 		f := &Factory{
-			Renderer:  renderer.New(buf),
-			MiaClient: miaClient,
+			renderer:  renderer.New(buf),
+			miaClient: miaClient,
 		}
 		getProjects(f)
 

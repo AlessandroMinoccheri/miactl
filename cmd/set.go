@@ -7,9 +7,10 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+// MiaContext define the context of a console
 type MiaContext struct {
-	APIBaseURL string
-	APIKey     string
+	APIBaseURL string `yaml:"apiBaseUrl"`
+	APIKey     string `yaml:"apiKey"`
 }
 
 func newSetCommand() *cobra.Command {
@@ -20,12 +21,12 @@ func newSetCommand() *cobra.Command {
 		ValidArgs: validArgs,
 		Args:      cobra.ExactValidArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// f, err := GetFactoryFromContext(cmd.Context(), opts)
-			// if err != nil {
-			// 	return err
-			// }
+			f, err := GetFactoryFromContext(cmd.Context(), opts)
+			if err != nil {
+				return err
+			}
 
-			// writeContextFile(f, fmt.Sprintf("%s/contexts/%s", cfgHome, "prova.yml"), &MiaContext{})
+			writeContextFile(f, fmt.Sprintf("%s/contexts/%s", cfgHome, "prova.yml"), &MiaContext{})
 
 			fmt.Fprint(cmd.OutOrStderr(), "Context created")
 			return nil
@@ -34,7 +35,7 @@ func newSetCommand() *cobra.Command {
 }
 
 func writeContextFile(f *Factory, filePath string, miaContext *MiaContext) error {
-	file, err := f.Fs.Create(filePath)
+	file, err := f.Fs().Create(filePath)
 	if err != nil {
 		return err
 	}

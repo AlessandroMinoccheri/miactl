@@ -3,6 +3,8 @@ package cmd
 import (
 	"testing"
 
+	"github.com/mia-platform/miactl/sdk"
+
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v2"
@@ -36,9 +38,9 @@ func TestNewSetCommand(t *testing.T) {
 	})
 }
 
-func TestSetCommand(t *testing.T) {
+func TestSetContextCommand(t *testing.T) {
 	t.Run("not returns error", func(t *testing.T) {
-		out, err := executeCommand(NewRootCmd(), "set", "context")
+		out, err := executeRootCommandWithContext(sdk.MockClientError{}, "set", "context")
 		require.Equal(t, "Context created", out)
 		require.NoError(t, err)
 	})
@@ -48,7 +50,7 @@ func TestWriteContextFile(t *testing.T) {
 	t.Run("write a new file", func(t *testing.T) {
 		appFs := afero.NewMemMapFs()
 		f := &Factory{
-			Fs: appFs,
+			fs: appFs,
 		}
 		filePath := "/my/path"
 		miaContext := MiaContext{
@@ -68,6 +70,15 @@ func TestWriteContextFile(t *testing.T) {
 			err = yaml.Unmarshal(content, &actualSavedContext)
 			require.NoError(t, err)
 			require.Equal(t, miaContext, actualSavedContext)
+		})
+
+		t.Run("with correct string content", func(t *testing.T) {
+			content, err := afero.ReadFile(appFs, filePath)
+			require.NoError(t, err)
+			require.NoError(t, err)
+			require.Equal(t, `apiBaseUrl: https://my-host
+apiKey: api-key
+`, string(content))
 		})
 	})
 }
