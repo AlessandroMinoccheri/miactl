@@ -8,9 +8,9 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/mia-platform/miactl/fs"
 	"github.com/mia-platform/miactl/renderer"
 	"github.com/mia-platform/miactl/sdk"
-	"github.com/spf13/afero"
 
 	"github.com/stretchr/testify/require"
 )
@@ -18,7 +18,7 @@ import (
 func TestWithFactoryValue(t *testing.T) {
 	t.Run("save factory to passed context", func(t *testing.T) {
 		ctx := context.Background()
-		ctx = WithFactoryValue(ctx, &bytes.Buffer{})
+		ctx = WithFactoryValue(ctx, &bytes.Buffer{}, "")
 		f := ctx.Value(FactoryContextKey{})
 		require.NotNil(t, f)
 		if _, ok := f.(Factory); ok {
@@ -50,7 +50,7 @@ func TestAddMiaClientToFactory(t *testing.T) {
 	t.Run("add MiaClient to factory", func(t *testing.T) {
 		opts := sdk.Options{
 			APIKey:     "my-apiKey",
-			APIBaseURL: "base-url",
+			APIBaseURL: "http://base-url.com/",
 			APICookie:  "cookie",
 		}
 		miaClient, err := sdk.New(opts)
@@ -108,9 +108,9 @@ func TestFsMethod(t *testing.T) {
 
 	t.Run("returns renderer correctly", func(t *testing.T) {
 		f := Factory{
-			fs: afero.NewMemMapFs(),
+			fs: fs.MockFs(),
 		}
-		require.Equal(t, afero.NewMemMapFs(), f.Fs())
+		require.Equal(t, fs.MockFs(), f.Fs())
 	})
 }
 
@@ -127,7 +127,7 @@ func TestGetFactoryFromContext(t *testing.T) {
 	t.Run("throws if mia client error", func(t *testing.T) {
 		ctx := context.Background()
 		buf := &bytes.Buffer{}
-		ctx = WithFactoryValue(ctx, buf)
+		ctx = WithFactoryValue(ctx, buf, "")
 		f, err := GetFactoryFromContext(ctx, sdk.Options{})
 
 		require.Nil(t, f)
@@ -136,10 +136,11 @@ func TestGetFactoryFromContext(t *testing.T) {
 	})
 
 	t.Run("returns factory", func(t *testing.T) {
+		configPath := "config/path"
 		ctx := context.Background()
-		ctx = WithFactoryValue(ctx, &bytes.Buffer{})
+		ctx = WithFactoryValue(ctx, &bytes.Buffer{}, configPath)
 		opts := sdk.Options{
-			APIBaseURL: "http://base-url",
+			APIBaseURL: "http://base-url.com/",
 			APICookie:  "cookie",
 			APIKey:     "my-APIKey",
 		}
@@ -153,5 +154,7 @@ func TestGetFactoryFromContext(t *testing.T) {
 		require.Equal(t, renderer.New(&bytes.Buffer{}), f.Renderer())
 		require.Equal(t, miaClient, f.MiaClient())
 		require.Equal(t, reflect.ValueOf(sdk.New).Pointer(), reflect.ValueOf(f.miaClientCreator).Pointer())
+
+		require.Equal(t, configPath, f.homeDir)
 	})
 }

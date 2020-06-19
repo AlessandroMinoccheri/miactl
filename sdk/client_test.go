@@ -37,7 +37,7 @@ func TestNew(t *testing.T) {
 
 	t.Run("correctly returns mia client", func(t *testing.T) {
 		opts := Options{
-			APIBaseURL: "http://my-url/path",
+			APIBaseURL: "http://my-url/path/",
 			APIKey:     "my apiKey",
 			APICookie:  "sid=asd",
 		}
@@ -47,7 +47,7 @@ func TestNew(t *testing.T) {
 			BaseURL: opts.APIBaseURL,
 			Headers: map[string]string{
 				"client-key": opts.APIKey,
-				"cookie": opts.APICookie,
+				"cookie":     opts.APICookie,
 			},
 		})
 

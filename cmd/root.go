@@ -3,11 +3,9 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 
 	"github.com/mia-platform/miactl/sdk"
-	"gopkg.in/yaml.v2"
 
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
@@ -15,15 +13,18 @@ import (
 )
 
 var (
-	cfgFile string
-	opts    = sdk.Options{}
-	cfgHome string
+	opts = sdk.Options{}
 )
 
 // NewRootCmd creates a new root command
 func NewRootCmd() *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use: "miactl",
+		PreRun: func(cmd *cobra.Command, args []string) {
+			cmd.MarkFlagRequired("apiKey")
+			cmd.MarkFlagRequired("apiCookie")
+			cmd.MarkFlagRequired("apiBaseUrl")
+		},
 	}
 	setRootPersistentFlag(rootCmd)
 
@@ -38,8 +39,14 @@ func NewRootCmd() *cobra.Command {
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
+	configPath, err := getConfigDir()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
 	rootCmd := NewRootCmd()
-	ctx := WithFactoryValue(context.Background(), rootCmd.OutOrStdout())
+	ctx := WithFactoryValue(context.Background(), rootCmd.OutOrStdout(), configPath)
 	if err := rootCmd.ExecuteContext(ctx); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -51,62 +58,34 @@ func init() {
 }
 
 func setRootPersistentFlag(rootCmd *cobra.Command) {
+	rootCmd.PersistentFlags().StringVar(&opts.APIKey, "apiKey", "", "API Key")
+	rootCmd.PersistentFlags().StringVar(&opts.APICookie, "apiCookie", "", "api cookie sid")
+	rootCmd.PersistentFlags().StringVar(&opts.APIBaseURL, "apiBaseUrl", "", "api base url")
+}
+
+func getConfigDir() (string, error) {
 	home, err := homedir.Dir()
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%s/%s", home, ".miactl"), nil
+}
+
+func initConfig() {
+	cfgFile := "config"
+
+	configPath, err := getConfigDir()
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	cfgHome = fmt.Sprintf("%s/%s", home, ".miactl")
 
-	// rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.miactl.yaml)")
-	rootCmd.PersistentFlags().StringVar(&opts.APIKey, "apiKey", "", "API Key")
-	rootCmd.PersistentFlags().StringVar(&opts.APICookie, "apiCookie", "", "api cookie sid")
-	rootCmd.PersistentFlags().StringVar(&opts.APIBaseURL, "apiBaseUrl", "", "api base url")
+	viper.AddConfigPath(configPath)
+	viper.SetConfigName(cfgFile)
 
-	// viper.BindPFlag("apiKey", rootCmd.Flags().Lookup("apiKey"))
-	// viper.BindPFlag("apiCookie", rootCmd.Flags().Lookup("apiCookie"))
-	// viper.BindPFlag("apiKey", rootCmd.Flags().Lookup("apiKey"))
+	viper.AutomaticEnv()
 
-	rootCmd.MarkFlagRequired("apiKey")
-	rootCmd.MarkFlagRequired("apiCookie")
-	rootCmd.MarkFlagRequired("apiBaseUrl")
-}
-
-// initConfig reads in config file and ENV variables if set.
-func initConfig() {
-	if cfgFile != "" {
-		// Use config file from the flag.
-		viper.SetConfigFile(cfgFile)
-	} else {
-		// Find home directory.
-		home, err := homedir.Dir()
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-
-		// Search config in home directory with name ".miactl" (without extension).
-		viper.AddConfigPath(home)
-		viper.SetConfigName(".miactl")
-
-		// viper.Set("a", "b")
-		// s := yamlStringSettings()
-		// ioutil.WriteFile(fmt.Sprintf("%s/.miactl", home), []byte(s), 0755)
-	}
-
-	viper.AutomaticEnv() // read in environment variables that match
-
-	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Println("Using config file:", viper.ConfigFileUsed())
 	}
-}
-
-func yamlStringSettings() string {
-	c := viper.AllSettings()
-	bs, err := yaml.Marshal(c)
-	if err != nil {
-		log.Fatalf("unable to marshal config to YAML: %v", err)
-	}
-	return string(bs)
 }

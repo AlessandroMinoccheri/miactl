@@ -7,10 +7,10 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/mia-platform/miactl/fs"
 	"github.com/mia-platform/miactl/renderer"
 	"github.com/mia-platform/miactl/sdk"
 
-	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 )
 
@@ -30,7 +30,13 @@ func executeCommandWithContext(ctx context.Context, root *cobra.Command, args ..
 	return buf.String(), err
 }
 
-func executeRootCommandWithContext(mockError sdk.MockClientError, args ...string) (output string, err error) {
+type testOutput struct {
+	text string
+
+	factory *Factory
+}
+
+func executeRootCommandWithContext(mockError sdk.MockClientError, args ...string) (output testOutput, err error) {
 	rootCmd := NewRootCmd()
 
 	buf := new(bytes.Buffer)
@@ -38,15 +44,21 @@ func executeRootCommandWithContext(mockError sdk.MockClientError, args ...string
 	rootCmd.SetErr(buf)
 	rootCmd.SetArgs(args)
 
-	ctx := context.WithValue(context.Background(), FactoryContextKey{}, Factory{
+	f := Factory{
 		renderer:         renderer.New(rootCmd.OutOrStderr()),
 		miaClientCreator: sdk.WrapperMockMiaClient(mockError),
-		fs:               &afero.MemMapFs{},
-	})
+		fs:               fs.MockFs(),
+		homeDir:          "testdata",
+	}
+
+	ctx := context.WithValue(context.Background(), FactoryContextKey{}, f)
 
 	err = rootCmd.ExecuteContext(ctx)
 
-	return buf.String(), err
+	return testOutput{
+		text:    buf.String(),
+		factory: &f,
+	}, err
 }
 
 func executeCommandC(root *cobra.Command, args ...string) (c *cobra.Command, output string, err error) {

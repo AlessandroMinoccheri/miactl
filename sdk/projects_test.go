@@ -72,7 +72,7 @@ func TestProjectsGet(t *testing.T) {
 		}
 
 		s := testCreateResponseServer(t, requestAssertions, responseBody, 200)
-		client := testCreateProjectClient(t, s.URL)
+		client := testCreateProjectClient(t, fmt.Sprintf("%s/", s.URL))
 
 		projects, err := client.Get()
 		require.NoError(t, err)
@@ -82,7 +82,7 @@ func TestProjectsGet(t *testing.T) {
 	t.Run("throws when server respond with 401", func(t *testing.T) {
 		responseBody := `{"statusCode":401,"error":"Unauthorized","message":"Unauthorized"}`
 		s := testCreateResponseServer(t, requestAssertions, responseBody, 401)
-		client := testCreateProjectClient(t, s.URL)
+		client := testCreateProjectClient(t, fmt.Sprintf("%s/", s.URL))
 
 		projects, err := client.Get()
 		require.Nil(t, projects)
@@ -93,7 +93,7 @@ func TestProjectsGet(t *testing.T) {
 	t.Run("throws if response body is not as expected", func(t *testing.T) {
 		responseBody := `{"statusCode":401,"error":"Unauthorized","message":"Unauthorized"}`
 		s := testCreateResponseServer(t, requestAssertions, responseBody, 200)
-		client := testCreateProjectClient(t, s.URL)
+		client := testCreateProjectClient(t, fmt.Sprintf("%s/", s.URL))
 
 		projects, err := client.Get()
 		require.Nil(t, projects)

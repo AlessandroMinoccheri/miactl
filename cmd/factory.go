@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/mia-platform/miactl/fs"
 	"github.com/mia-platform/miactl/renderer"
 	"github.com/mia-platform/miactl/sdk"
-	"github.com/spf13/afero"
 )
 
 var errFactory = errors.New("factory error")
@@ -22,9 +22,11 @@ type miaClientCreator func(opts sdk.Options) (*sdk.MiaClient, error)
 type Factory struct {
 	renderer  renderer.IRenderer
 	miaClient *sdk.MiaClient
-	fs        afero.Fs
+	fs        *fs.Fs
 
 	miaClientCreator miaClientCreator
+
+	homeDir string
 }
 
 func (o *Factory) addMiaClientToFactory(opts sdk.Options) error {
@@ -56,7 +58,7 @@ func (o *Factory) MiaClient() *sdk.MiaClient {
 }
 
 // Fs method to access to fs field
-func (o *Factory) Fs() afero.Fs {
+func (o *Factory) Fs() *fs.Fs {
 	if o.fs == nil {
 		panic(fmt.Errorf("%w: fs not defined", errFactory))
 	}
@@ -64,11 +66,12 @@ func (o *Factory) Fs() afero.Fs {
 }
 
 // WithFactoryValue add factory to passed context
-func WithFactoryValue(ctx context.Context, writer io.Writer) context.Context {
+func WithFactoryValue(ctx context.Context, writer io.Writer, homeDir string) context.Context {
 	return context.WithValue(ctx, FactoryContextKey{}, Factory{
 		renderer:         renderer.New(writer),
 		miaClientCreator: sdk.New,
-		fs:               afero.NewOsFs(),
+		fs:               fs.New(),
+		homeDir:          homeDir,
 	})
 }
 

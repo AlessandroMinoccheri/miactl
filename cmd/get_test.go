@@ -36,7 +36,7 @@ func TestGetCommandRenderAndReturnsError(t *testing.T) {
 
 	t.Run("without required flags", func(t *testing.T) {
 		cmd := NewRootCmd()
-		ctx := WithFactoryValue(context.Background(), cmd.OutOrStdout())
+		ctx := WithFactoryValue(context.Background(), cmd.OutOrStdout(), "")
 		out, err := executeCommandWithContext(ctx, cmd, "get", "projects")
 		expectedErrMessage := fmt.Sprintf("%s: client options are not correct", sdk.ErrCreateClient)
 		require.Contains(t, out, expectedErrMessage)
@@ -55,7 +55,7 @@ func TestGetCommand(t *testing.T) {
 	t.Run("get projects", func(t *testing.T) {
 		out, err := executeRootCommandWithContext(sdk.MockClientError{}, "get", "projects", apiKeyFlag, apiBaseURLFlag, apiCookieFlag)
 		require.NoError(t, err)
-		rows := renderer.CleanTableRows(out)
+		rows := renderer.CleanTableRows(out.text)
 
 		assertMockProjectsCorrectlyRendered(t, rows)
 	})
@@ -63,7 +63,7 @@ func TestGetCommand(t *testing.T) {
 	t.Run("get project", func(t *testing.T) {
 		out, err := executeRootCommandWithContext(sdk.MockClientError{}, "get", "project", apiKeyFlag, apiBaseURLFlag, apiCookieFlag)
 		require.NoError(t, err)
-		rows := renderer.CleanTableRows(out)
+		rows := renderer.CleanTableRows(out.text)
 
 		assertMockProjectsCorrectlyRendered(t, rows)
 	})
@@ -74,7 +74,7 @@ func TestGetCommand(t *testing.T) {
 		}, "get", "projects", apiKeyFlag, apiBaseURLFlag, apiCookieFlag)
 		require.NoError(t, err)
 
-		require.Equal(t, fmt.Sprintf("%s\n", sdk.ErrHTTP), out)
+		require.Equal(t, fmt.Sprintf("%s\n", sdk.ErrHTTP), out.text)
 	})
 }
 
