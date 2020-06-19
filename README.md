@@ -20,7 +20,7 @@ brew install mia-platform/tap/miactl
 
 ### Using Go
 
-This library require golang at version >= 1.13
+This library require golang at version >= 1.14
 
 ```sh
 go get -u github.com/mia-platform/miactl
